@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from beanie import Document
 
@@ -14,7 +14,7 @@ class User(Document):
         
 class UserCreate(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     password: str
     
 class UserUpdate(BaseModel):

@@ -3,8 +3,9 @@ from fastapi import APIRouter, HTTPException, status,Response
 
 
 from models.users import User, UserCreate , UserLogin
-from .passwords import hash_password, verify_password
+from .passwords import hash_password, verify_password, check_password_strength
 from .generateToken import create_access_token
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 
@@ -25,9 +26,19 @@ async def register_user(user_data: UserCreate):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this email already exists"
         )
+        
+    password_strength = check_password_strength(user_data.password)
+    
+    if not password_strength["is_strong"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=password_strength["message"]
+        )
+        
     
    
     hashed_pw = hash_password(user_data.password)
+    
     
    
     new_user = User(

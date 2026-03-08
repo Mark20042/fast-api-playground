@@ -8,3 +8,4 @@ PyJWT
 zxcvbn
 slowapi # for rate limiting
 secure # for http headers
+pydantic[email] # for validating email to use @
