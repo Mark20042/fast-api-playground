@@ -1,2 +1,7 @@
 fastapi
 uvicorn
+motor
+beanie
+pydantic-settings
+passlib[argon2]
+PyJWT
