@@ -16,6 +16,7 @@ from routers.Auth import auth_router
 # init 
 limiter = Limiter(key_func=get_remote_address)
 secure_headers = Secure()
+secure_headers = Secure.with_default_headers()
 
 # database connection
 @asynccontextmanager
@@ -35,7 +36,7 @@ app = FastAPI(lifespan=lifespan)
 @app.middleware("http")
 async def set_secure_headers(request: Request, call_next):
     response = await call_next(request)
-    secure_headers.framework.fastapi(response)
+    secure_headers.set_headers_async(response)
     return response
 
 # rate limiter middleware
@@ -53,7 +54,7 @@ app.add_middleware(
 )
 
 # routers
-app.include_router(auth_router, prefix="/auth")
+app.include_router(auth_router)
 
 # routers
 @app.get("/")
