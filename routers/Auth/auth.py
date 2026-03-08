@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status,Response
 
 
 from models.users import User, UserCreate , UserLogin
@@ -44,7 +44,7 @@ async def register_user(user_data: UserCreate):
 
 # login
 @router.post("/login")
-async def login_user(credentials: UserLogin):
+async def login_user(credentials: UserLogin, response: Response):
    
     user = await User.find_one(User.email == credentials.email)
     
@@ -64,8 +64,13 @@ async def login_user(credentials: UserLogin):
    
     access_token = create_access_token(data=token_payload)
     
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,  
+        secure=False,   
+        samesite="lax",
+        max_age=1800   
+    )
 
-    return {
-        "access_token": access_token, 
-        "token_type": "bearer"
-    }
+    return {"message": "Successfully logged in!"}

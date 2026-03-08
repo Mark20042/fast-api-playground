@@ -5,3 +5,6 @@ beanie
 pydantic-settings
 passlib[argon2]
 PyJWT
+zxcvbn
+slowapi # for rate limiting
+secure # for http headers

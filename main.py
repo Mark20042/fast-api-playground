@@ -1,52 +1,61 @@
-from fastapi import FastAPI
-from typing import Optional
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
-from config.database import db, ping_db
+from fastapi import FastAPI, Request
+from secure import Secure
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from beanie import init_beanie
 
-# routers
+# local imports
+from config.database import db, ping_db
+from models.users import User 
 from routers.Auth import auth_router
 
+# init 
+limiter = Limiter(key_func=get_remote_address)
+secure_headers = Secure()
+
+# database connection
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("Starting up server...")
     await ping_db()
+   
+    await init_beanie(database=db, document_models=[User])
+    print("Database and Models connected successfully!")
     yield
+    print("Shutting down server...")
 
+# initialize app
 app = FastAPI(lifespan=lifespan)
 
-# /docs to see the documentation / swagger
+# secure http headers
+@app.middleware("http")
+async def set_secure_headers(request: Request, call_next):
+    response = await call_next(request)
+    secure_headers.framework.fastapi(response)
+    return response
 
+# rate limiter middleware
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# routers
+app.include_router(auth_router, prefix="/auth")
+
+# routers
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
-
-app.include_router(auth_router)
-
-# Path Parameters with Query Parameters optional
-# @app.get("/greet/{name}")
-# async def greet(name:str , age: Optional[int] = None):
-#     return {"message": f"Hello {name} you are {age} years old"}
-
-# Query Parameters both 
-# @app.get("/greet/")
-# async def greet(name: str, age: Optional[int] = None):
-#     return {"message": f"Hello {name} you are {age} years old"}
-
-# @app.get("/items/{item_id}")
-# async def read_item(item_id: int):
-#     return {"item_id": item_id}
-
-
-# class Student(BaseModel):
-#     name: str
-#     age: int
-#     roll: int
-    
-    
-# @app.post("/create_student")
-# async def create_student(student: Student):
-#     return {
-#         "name": student.name,
-#         "age": student.age,
-#         "roll": student.roll
-#     }
+    return {"message": "Crypto Vault API is running!"}
